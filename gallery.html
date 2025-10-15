@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Image Gallery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f8f8f8;
+        }
+
+        .gallery-container {
+            max-width: 960px;
+            margin: 20px auto;
+            padding: 15px;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+        }
+
+        .filters {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            outline: none;
+        }
+
+        .filter-btn:hover {
+            background-color: #0056b3;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .filter-btn.active {
+            background-color: #28a745;
+            font-weight: bold;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            border: 1px solid #eee;
+            padding: 8px;
+            text-align: center;
+            background-color: #fff;
+            cursor: pointer;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .gallery-item img {
+            max-width: 100%;
+            height: 200px;
+            display: block;
+            margin: 0 auto 10px auto;
+            object-fit: cover;
+            border-radius: 2px;
+            filter: grayscale(50%);
+            opacity: 0.9;
+        }
+
+        .gallery-item p {
+            font-size: 0.95em;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.75);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox-content {
+            max-width: 80%;
+            max-height: 80%;
+            display: block;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .lightbox-content img {
+            width: 100%;
+            height: auto;
+            border: 5px solid #FFD700;
+        }
+
+        .close-btn {
+            color: #ccc;
+            font-size: 3em;
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            cursor: alias;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="gallery-container">
+        <h1>Our Super Basic Image Gallery</h1>
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">Show All</button>
+            <button class="filter-btn" data-filter="nature">Nature Photos</button>
+            <button class="filter-btn" data-filter="city">Cityscapes</button>
+            <button class="filter-btn" data-filter="animals">Animal Friends</button>
+        </div>
+
+        <div class="gallery-grid" id="gallery-grid">
+        </div>
+    </div>
+
+    <div id="myLightbox" class="lightbox">
+        <span class="close-btn">&times;</span>
+        <img class="lightbox-content" id="lightbox-img" src="">
+    </div>
+
+    <script>
+        const galleryGrid = document.getElementById('gallery-grid');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const lightbox = document.getElementById('myLightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const closeBtn = document.querySelector('.close-btn');
+
+        const images = [
+            { src: 'https://media.istockphoto.com/id/670536592/photo/green-forest-in-spring.jpg?s=612x612&w=0&k=20&c=mh3x_eCI7evwjGHO3YuZYTK2l7kImPHI-g53R99sgFI=', alt: 'Green forest', category: 'nature' },
+            { src: 'https://i2-prod.mirror.co.uk/incoming/article22830674.ece/ALTERNATES/s1200b/1_View-of-The-skyline-of-Singapore-downtown-CBD.jpg', alt: 'City skyline at night', category: 'city' },
+            { src: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500', alt: 'Cute puppy', category: 'animals' },
+            { src: 'https://images.pexels.com/photos/2253275/pexels-photo-2253275.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1', alt: 'Mountain lake', category: 'nature' },
+            { src: 'https://images.pexels.com/photos/2103828/pexels-photo-2103828.jpeg?cs=srgb&dl=pexels-einfoto-2103828.jpg&fm=jpg', alt: 'Busy street', category: 'city' },
+            { src: 'https://as2.ftcdn.net/v2/jpg/01/73/28/05/1000_F_173280545_cCKrbHlOb91ROSr1vjkySYC98zFotEfL.jpg', alt: 'Lion looking', category: 'animals' }
+        ];
+
+        function displayImages(category = 'all') {
+            galleryGrid.innerHTML = '';
+
+            let filteredImages = images;
+
+            if (category !== 'all') {
+                filteredImages = images.filter(img => img.category == category);
+            }
+
+            for (i = 0; i < filteredImages.length; i++) {
+                const img = filteredImages[i];
+                const galleryItem = document.createElement('div');
+                galleryItem.classList.add('gallery-item');
+                galleryItem.innerHTML = `
+                    <img src="${img.src}" alt="${img.alt}">
+                    <p>${img.alt}</p>
+                `;
+                galleryItem.addEventListener('click', function() {
+                    openLightbox(img.src);
+                });
+                galleryGrid.appendChild(galleryItem);
+            }
+        }
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                displayImages(this.dataset.filter);
+            });
+        });
+
+        function openLightbox(src) {
+            lightbox.style.display = 'block';
+            lightboxImg.src = src;
+        }
+
+        closeBtn.addEventListener('click', function() {
+            lightbox.style.display = 'none';
+        });
+
+        lightbox.addEventListener('click', function(event) {
+            if (event.target === lightbox || event.target === lightboxImg) {
+                lightbox.style.display = 'none';
+            }
+        });
+
+        displayImages();
+    </script>
+</body>
+</html>
